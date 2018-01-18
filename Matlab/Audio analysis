@@ -1,0 +1,72 @@
+clc; clear all; close all;
+
+[samp_recd,samp_rate] = audioread('CIR_20170412_train.wav');
+samp_ch1 = samp_recd(:,1);
+samp_ch2 = samp_recd(:,2);
+
+figure;
+spectrogram(samp_ch1,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+figure;
+spectrogram(samp_ch2,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+ord = 10;
+pass_rppl = 0.001;
+stop_attn = 60;
+stop_freq = 6000 / (samp_rate/2);
+[b,a] = ellip(ord, pass_rppl, stop_attn, stop_freq, 'low');
+f_samp_ch1 = filter(b, a, samp_ch1);
+f_samp_ch2 = filter(b, a, samp_ch2);
+
+figure;
+spectrogram(f_samp_ch1,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+figure;
+spectrogram(f_samp_ch2,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+samp_filt(:,1) = f_samp_ch1;
+samp_filt(:,2) = f_samp_ch2;
+
+audiowrite('hc_samp_aud_filt.wav',samp_filt,samp_rate);
+
+% % FFT of filtered signal
+fft_fsamp_ch1 = abs(fft(f_samp_ch1,length(f_samp_ch1)));
+fft_fsamp_ch2 = abs(fft(f_samp_ch2,length(f_samp_ch2)));
+figure;
+plot(fft_fsamp_ch1);
+figure;
+plot(fft_fsamp_ch2);
+
+% % Conversion to Mel's Cepstrum
+mel_filt_ch1 = 1127*log(1 + (fft_fsamp_ch1/700));
+mel_filt_ch2 = 1127*log(1 + (fft_fsamp_ch2/700));
+
+figure;
+spectrogram(mel_filt_ch1,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+figure;
+spectrogram(mel_filt_ch2,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
