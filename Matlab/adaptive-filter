@@ -1,0 +1,59 @@
+% Signal comes in.
+% Passes though a basic low pass filter to filter up till 9khz
+% Based on the sampling frequency, a 20ms frame is passed to Id structnet
+% After the sound is id'd it goes to the filter choice to suit the sound's
+% filter requirements.
+% After the sound is id'd it goes to amplification module.
+% Amplification module id's sound level below certain range and gives it a
+% multiplier to amplify its amplitude
+% Then it goes to prediction sub system to detect any sound coming in
+% If any sound is detected in PredSys, the id process continues else it
+% identifies as there is no sound/speech input and outputs zeros as
+% silence.
+
+clc; clear all; close all;
+
+[samp_recd,samp_rate] = audioread('CIR_20170412_train.wav');
+samp_ch1 = samp_recd(:,1);
+samp_ch2 = samp_recd(:,2);
+
+figure;
+spectrogram(samp_ch1,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+figure;
+spectrogram(samp_ch2,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+ord = 10;
+pass_rppl = 0.001;
+stop_attn = 50;
+stop_freq = 9000 / (samp_rate/2);
+[b,a] = ellip(ord, pass_rppl, stop_attn, stop_freq, 'low');
+f_samp_ch1 = filter(b, a, samp_ch1);
+f_samp_ch2 = filter(b, a, samp_ch2);
+
+figure;
+spectrogram(f_samp_ch1,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+figure;
+spectrogram(f_samp_ch2,2048,[],[],samp_rate,'yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+samp_filt(:,1) = f_samp_ch1;
+samp_filt(:,2) = f_samp_ch2;
+
+audiowrite('hc_samp_aud_filt.wav',samp_filt,samp_rate);
