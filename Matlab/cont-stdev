@@ -1,0 +1,120 @@
+clc; clear all; close all;
+
+% Initially open a prerecoreded file instead of real-time audio input.
+[y,Fs] = audioread('sm1_n2H.wav');
+info = audioinfo('sm1_n2H.wav')
+figure();
+plot(y);
+sound(y,Fs);
+pause(5);
+
+% Apply a bandpass filter for vocal range.
+ord = 10;
+pass_rppl = 1;
+stop_attn = 50;
+pass_freq = 500 / (Fs/2);
+stop_freq = 5000 / (Fs/2);
+[b,a] = ellip(ord, pass_rppl, stop_attn, [pass_freq, stop_freq], 'bandpass');
+f_sig = filter(b, a, y);
+audiowrite('sample.wav',f_sig,Fs);
+figure();
+plot(f_sig);
+sound(f_sig*3,Fs);
+pause(5);
+
+% Obtain the output of from the filter and apply cluster averaging method.
+% Take 100 Clusters per Second with 100 samples per Cluster
+% This gives 1 Cluster of 100 Samples for 1/100 of a Second, ie, 100 mSec
+
+count = 0;
+sig_out = [];
+out = [];
+
+std_vals = zeros(1,10);
+
+% Scalar Kalman Filter Initializations
+x_stdev = 0; % state - take the mean intensity
+p = 0; % initial covariance - take as 0 since the noise is zero-mean
+q = 0.001;
+r = 0.3;
+k = 0;
+X = [];
+
+% % take first cluster of 100 samples
+% sig = y((count*100)+1:(count*100)+100);
+% % filter the signal obtained
+% % f_sig = filter(b, a, sig);
+% % obtain the signal stats
+% % curr_stats = [max(f_sig) min(f_sig) mean(f_sig) std(f_sig) var(f_sig)]
+% curr_stats = [max(sig) min(sig) mean(sig) std(sig) var(sig)];
+% prev_stats = curr_stats;
+
+% Make a separate stat for noise before signal started and use that for
+% current cluster stats matching.
+
+while(count<500-1)
+    
+    % % Statistics Calculation
+    sig = y((count*100)+1:(count*100)+100);
+    f_sig = filter(b, a, sig);
+    curr_stats = [max(f_sig) min(f_sig) mean(f_sig) std(f_sig) var(f_sig)];
+    % curr_stats = [max(sig) min(sig) mean(sig) std(sig) var(sig)];
+    prev_stats = curr_stats;
+    
+    % % Kalman Prediction
+    
+    % x_stdev = x_stdev;
+    % % Information of Previous Ten Estimates
+    std_vals(10) = x_stdev;
+    std_vals(9) = std_vals(10);
+    std_vals(8) = std_vals(9);
+    std_vals(7) = std_vals(8);
+    std_vals(6) = std_vals(7);
+    std_vals(5) = std_vals(6);
+    std_vals(4) = std_vals(5);
+    std_vals(3) = std_vals(4);
+    std_vals(2) = std_vals(3);
+    std_vals(1) = std_vals(2);
+    p = p + q;
+    
+    k = p/(p + r);
+    x_stdev = x_stdev + (k*(curr_stats(4)-x_stdev));
+    X = [X, x_stdev*1]; % amplify here
+    p = (1-k)*p;
+    
+    % % Noise Chop-off Method
+    if (x_stdev > max(std_vals))
+        out = f_sig;
+        % out = sig;
+    elseif (x_stdev < min(std_vals))
+        out = f_sig;
+        % out = sig;
+    else
+        out = zeros(100,1);
+    end
+    
+    % % Transform output to 1 x M matrix.
+    sig_out = [sig_out out'];
+    
+    count = count + 1;
+    
+end
+
+% Transform output to 1 x M matrix.
+sig_out = sig_out';
+
+% write the filtered signal to file
+audiowrite('sample_unfilt.wav',sig_out,Fs);
+figure();
+sound(sig_out*2,Fs);
+plot(sig_out);
+pause(5);
+
+% bandpass filtering after noise chopoff
+f_sig = filter(b, a, sig_out);
+f_sig = f_sig * 3; % amplify here
+audiowrite('sample_filt.wav',f_sig,Fs);
+figure();
+plot(f_sig);
+sound(f_sig,Fs);
+pause(5);
