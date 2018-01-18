@@ -1,0 +1,83 @@
+clc; clear all; close all;
+
+[samp_recd,samp_rate] = audioread('cir_20170412_test_beeps.wav');
+samp_ch1 = samp_recd(:,1);
+samp_ch2 = samp_recd(:,2);
+
+% Remove Beeps placed at Minutes 0...7.
+
+x_1 = [];
+for min = 0:1:7
+    [ostft,of,ot] = stft(samp_ch1((((min*60)+0)*samp_rate)+1:(((min*60)+1)*samp_rate)),1024,256,10240,samp_rate);
+    size_s = size(ostft);
+    for r = 1:1:size_s(1)
+        for c = 1:1:size_s(2)
+            if (abs(ostft(r,c)) > 5)
+                ostft(r,c) = 5;
+            else
+                ostft(r,c) = ostft(r,c);
+            end
+        end
+    end
+    for r = ceil(size_s(1)*15/24)+1:1:size_s(1)
+        for c = 1:1:size_s(2)
+            if (abs(ostft(r,c)) > 0)
+                ostft(r,c) = 0;
+            else
+                ostft(r,c) = ostft(r,c);
+            end
+        end
+    end
+    [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    x_1 = [x_1, ox];
+    if (min <= 6)
+        [ostft,of,ot] = stft(samp_ch1((((min*60)+1)*samp_rate)+1:(((min*60)+60)*samp_rate)),1024,256,10240,samp_rate);
+        [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    else
+        [ostft,of,ot] = stft(samp_ch1((((min*60)+1)*samp_rate)+1:length(samp_recd)),1024,256,10240,samp_rate);
+        [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    end
+    x_1 = [x_1, ox];
+end
+
+x_2 = [];
+for min = 0:1:7
+    [ostft,of,ot] = stft(samp_ch2((((min*60)+0)*samp_rate)+1:(((min*60)+1)*samp_rate)),1024,256,10240,samp_rate);
+    size_s = size(ostft);
+    for r = 1:1:size_s(1)
+        for c = 1:1:size_s(2)
+            if (abs(ostft(r,c)) > 5)
+                ostft(r,c) = 5;
+            else
+                ostft(r,c) = ostft(r,c);
+            end
+        end
+    end
+    for r = ceil(size_s(1)*15/24)+1:1:size_s(1)
+        for c = 1:1:size_s(2)
+            if (abs(ostft(r,c)) > 0)
+                ostft(r,c) = 0;
+            else
+                ostft(r,c) = ostft(r,c);
+            end
+        end
+    end
+    [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    x_2 = [x_2, ox];
+    if (min <= 6)
+        [ostft,of,ot] = stft(samp_ch2((((min*60)+1)*samp_rate)+1:(((min*60)+60)*samp_rate)),1024,256,10240,samp_rate);
+        [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    else
+        [ostft,of,ot] = stft(samp_ch2((((min*60)+1)*samp_rate)+1:length(samp_recd)),1024,256,10240,samp_rate);
+        [ox, ot] = istft(ostft,1024,256,10240,samp_rate);
+    end
+    x_2 = [x_2, ox];
+end
+
+x_ch1 = x_1';
+x_ch2 = x_2';
+
+samp_nobeep(:,1) = x_ch1;
+samp_nobeep(:,2) = x_ch2;
+
+audiowrite('hc_samp_aud_nobeep.wav',samp_nobeep,1.0*samp_rate);
