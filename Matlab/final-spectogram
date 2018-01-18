@@ -1,0 +1,177 @@
+% Clear up workspace before execution of program.
+clc; clear all; close all;
+
+% Load the audio sample and split the channels
+[samp_recd,samp_rate] = audioread('cir_20170412_test_beeps.wav');
+samp_ch1 = samp_recd(:,1);
+samp_ch2 = samp_recd(:,2);
+
+% Display the spectrogram of first channel in original signal
+figure;
+spectrogram(samp_ch1,2048,[],[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+% Display the spectrogram of second channel in original signal
+figure;
+spectrogram(samp_ch2,2048,[],[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+% Using - Inverse Short-Time Fourier Transformation (ISTFT) 
+% with Matlab Implementation
+% Thanks to Hristo Zhivomirov
+% https://www.mathworks.com/matlabcentral/fileexchange/...
+% 45577-inverse-short-time-fourier-transformation--istft--with-matlab-implementation
+
+% Get the STFT of the first channel and remove very high frequencies
+[ostft_1,of_1,ot_1] = stft(samp_ch1,1024,256,10240,samp_rate);
+size_s_f1 = size(ostft_1);
+for r = 1:1:size_s_f1(1)
+    for c = 1:1:size_s_f1(2)
+        if (abs(ostft_1(r,c)) > 21)
+            ostft_1(r,c) = 1;
+        else
+            ostft_1(r,c) = ostft_1(r,c);
+        end
+    end
+end
+for r = ceil(size_s_f1(1)*6/24)+1:1:size_s_f1(1)
+    for c = 1:1:size_s_f1(2)
+        if (abs(ostft_1(r,c)) > 1)
+            ostft_1(r,c) = 1;
+        else
+            ostft_1(r,c) = ostft_1(r,c);
+        end
+    end
+end
+% Get the Inverse STFT of the first channel after modifications
+[ox_ch1, ot_ch1] = istft(ostft_1,1024,256,10240,samp_rate);
+
+% Get the STFT of the second channel and remove very high frequencies
+[ostft_2,of_2,ot_2] = stft(samp_ch2,1024,256,10240,samp_rate);
+size_s_f2 = size(ostft_2);
+for r = 1:1:size_s_f2(1)
+    for c = 1:1:size_s_f2(2)
+        if (abs(ostft_2(r,c)) > 21)
+            ostft_2(r,c) = 1;
+        else
+            ostft_2(r,c) = ostft_2(r,c);
+        end
+    end
+end
+for r = ceil(size_s_f2(1)*6/24)+1:1:size_s_f2(1)
+    for c = 1:1:size_s_f2(2)
+        if (abs(ostft_2(r,c)) > 1)
+            ostft_2(r,c) = 1;
+        else
+            ostft_2(r,c) = ostft_2(r,c);
+        end
+    end
+end
+% Get the Inverse STFT of the second channel after modifications
+[ox_ch2, ot_ch2] = istft(ostft_2,1024,256,10240,samp_rate);
+
+% Display the spectrogram of first channel in original signal after
+% removing high frequency components
+figure;
+spectrogram(ox_ch1,2048,[],[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+% Display the spectrogram of second channel in original signal after
+% removing high frequency components
+figure;
+spectrogram(ox_ch2,2048,[],[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+ox_ch1 = ox_ch1';
+ox_ch2 = ox_ch2';
+
+% Combine both the channels into a single data set
+samp_nobeep(:,1) = ox_ch1;
+samp_nobeep(:,2) = ox_ch2;
+
+% Save the new edited audio
+audiowrite('hc_samp_aud_nobeep.wav',samp_nobeep,1.0*samp_rate);
+pause(10);
+
+% A low pass filter after 6kHz as frequency supressor
+ord = 15;
+pass_rppl = 0.001;
+stop_attn = 60;
+stop_freq = 6000 / (samp_rate/2);
+[b,a] = ellip(ord, pass_rppl, stop_attn, stop_freq, 'low');
+f_samp_ch1 = filter(b, a, ox_ch1');
+f_samp_ch2 = filter(b, a, ox_ch2');
+
+% A high pass filter upto 6kHz as amplification reducer
+ord = 15;
+pass_rppl = 0.001;
+stop_attn = 70;
+stop_freq = 6500 / (samp_rate/2);
+[b,a] = ellip(ord, pass_rppl, stop_attn, stop_freq, 'high');
+f_samp_ch1 = filter(b, a, f_samp_ch1);
+f_samp_ch2 = filter(b, a, f_samp_ch2);
+
+% Display the spectrogram of first channel in filtered signal
+figure;
+[s_f1,f_f1,t_f1,p_f1] = spectrogram(f_samp_ch1,2048,[],[],samp_rate,'power','yaxis');
+s_f1 = abs(s_f1);
+p_f1 = 10*log10(abs(p_f1));
+spectrogram(f_samp_ch1,2048,0,[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+% Display the spectrogram of second channel in filtered signal
+figure;
+[s_f2,f_f2,t_f2,p_f2] = spectrogram(f_samp_ch2,2048,[],[],samp_rate,'power','yaxis');
+s_f2 = abs(s_f2);
+p_f2 = 10*log10(abs(p_f2));
+spectrogram(f_samp_ch2,2048,0,[],samp_rate,'power','yaxis');
+colormap jet;
+grid on;
+grid minor;
+box on;
+
+% Combine both the channels into a single data set
+samp_filt(:,1) = f_samp_ch1;
+samp_filt(:,2) = f_samp_ch2;
+
+% Amplification multiplier for the filtered signal
+amp = 1200;
+
+% Save the filtered audio
+audiowrite('hc_final_samp_filt.wav',amp*samp_filt,samp_rate);
+pause(10);
+
+% Split into Pieces
+piece = [(0*60)+0,(0*60)+10.5,(0*60)+22,(0*60)+40,(0*60)+50,...
+    (1*60)+6.5,(1*60)+21.5,(1*60)+39.5,(1*60)+54,(2*60)+2.5,...
+    (2*60)+17,(2*60)+35,(2*60)+48.5,(2*60)+55,(3*60)+06,...
+    (3*60)+16.5,(3*60)+34,(3*60)+46.25,(3*60)+53.5,(3*60)+55.5,...
+    (4*60)+9.75,(4*60)+18,(4*60)+28.8,(4*60)+37.75,(4*60)+57.5,...
+    (5*60)+15,(5*60)+34,(5*60)+52.5,(6*60)+9.5,(6*60)+28.6,...
+    (6*60)+46.4,(6*60)+57.5,(7*60)+8,(7*60)+23.5];
+piece = piece*samp_rate;
+ext = '.wav';
+
+% Save the split audio file pieces as separate files.
+for i = 1:1:length(piece)-1
+    fname = strcat(num2str(i),ext);
+    audiowrite(fname,amp*samp_filt(piece(i)+1:piece(i+1)),samp_rate);
+end
+audiowrite(strcat(num2str(i+1),ext),amp*samp_filt(piece(end)+1:length(samp_recd)),samp_rate);
+
+% End of Program
