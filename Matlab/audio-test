@@ -1,0 +1,21 @@
+AR = dsp.AudioRecorder(16000, 'NumChannels', 4, 'OutputNumOverrunSamples', true);
+AFW = dsp.AudioFileWriter('myspeech.wav','FileFormat', 'WAV');
+disp('Speak into microphone now');
+figure;
+tic;
+while (toc < 20)
+    [audioIn,nOverrun] = AR();
+    AFW(audioIn);
+    plot(audioIn);
+    drawnow;
+    if nOverrun > 0
+        fprintf('Audio recorder queue was overrun by %d samples\n', nOverrun);
+    end
+end
+release(AR);
+release(AFW);
+disp('Recording complete');
+figure;
+plot(audioIn);
+grid on; grid minor; box on;
+legend('show');
