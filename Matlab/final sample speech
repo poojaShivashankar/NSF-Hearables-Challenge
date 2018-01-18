@@ -1,0 +1,74 @@
+% figure;
+% plot(f_samp_ch1);
+% hold on;
+% plot(x_ch1);
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% plot(f_samp_ch2);
+% hold on;
+% plot(x_ch2);
+% grid on;
+% grid minor;
+% box on;
+
+% start = 1*60*48000;
+% msec = 1000*60;
+%
+% figure;
+% % [s_o1,f_o1,t_o1,p_o1] = spectrogram(samp_ch1(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% spectrogram(samp_ch1(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% colormap jet;
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% % [s_o2,f_o2,t_o2,p_o2] = spectrogram(samp_ch2(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% spectrogram(samp_ch2(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% colormap jet;
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% plot(samp_ch1(start:start+((samp_rate*msec)/1000)));
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% plot(samp_ch2(start:start+((samp_rate*msec)/1000)));
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% % [s_f1,f_f1,t_f1,p_f1] = spectrogram(f_samp_ch1(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% spectrogram(f_samp_ch1(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% colormap jet;
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% % [s_f2,f_f2,t_f2,p_f2] = spectrogram(f_samp_ch2(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% spectrogram(f_samp_ch2(start:start+((samp_rate*msec)/1000)),msec,[],[],samp_rate,'power','yaxis');
+% colormap jet;
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% plot(f_samp_ch1(start:start+((samp_rate*msec)/1000)));
+% grid on;
+% grid minor;
+% box on;
+%
+% figure;
+% plot(f_samp_ch2(start:start+((samp_rate*msec)/1000)));
+% grid on;
+% grid minor;
+% box on;
